@@ -61,102 +61,73 @@ def formatData(data):
     return train_normalized, train_labels, val_normalized, val_labels, test_normalized, test_labels
 
 
-#The main NN class
-class TwoHiddenLayerNeuralNetwork:
-    def __init__(self, train_data, train_labels, val_data, val_labels, batch = 64, learningRate = 0.01,  epochs = 50):
+
+class OneHiddenLayerNeuralNetwork:
+    def __init__(self, train_data, train_labels, val_data, val_labels, batch=64, learning_rate=0.01, epochs=50):
         self.input = train_data
         self.target = train_labels
         self.val_input = val_data
         self.val_target = val_labels
         self.batch = batch
         self.epochs = epochs
-        self.learningRate = learningRate
-        self.loss = []  #Loss stored in a list so it can be plotted
-        self.accuracy = []  #Accuracy stored in a list so it can be plotted
+        self.learning_rate = learning_rate
+        self.loss = []  # Loss stored in a list so it can be plotted
+        self.accuracy = []  # Accuracy stored in a list so it can be plotted
 
-        #The connection weights
-        self.weight1 = np.random.randn(self.input.shape[1],256)
-        self.weight2 = np.random.randn(self.weight1.shape[1],128)
-        self.weight3 = np.random.randn(self.weight2.shape[1], train_labels.shape[1])
+        # The connection weights
+        self.weight1 = np.random.randn(self.input.shape[1], 256)
+        self.weight2 = np.random.randn(256, train_labels.shape[1])
 
-        #The perceptron biases
-        self.b1 = np.random.randn(self.weight1.shape[1])
-        self.b2 = np.random.randn(self.weight2.shape[1])
-        self.b3 = np.random.randn(self.weight3.shape[1])
+        # The perceptron biases
+        self.b1 = np.random.randn(256)
+        self.b2 = np.random.randn(train_labels.shape[1])
 
-
-    #Using relu
+    # Using relu
     def relu(self, x):
         return np.maximum(0, x)
 
-
-    #Derivative of relu, returns a copy of the OG array but with 1 or 0 depending on if the value is > 0
+    # Derivative of relu, returns a copy of the OG array but with 1 or 0 depending on if the value is > 0
     def relu_derivative(self, arr):
         return arr > 0
 
-
-    #The softmax function for the output layer
+    # The softmax function for the output layer
     def softmax(self, z):
-        z = z - np.max(z, axis = 1).reshape(z.shape[0], 1)
-        return np.exp(z) / np.sum(np.exp(z), axis = 1).reshape(z.shape[0],1)
+        z = z - np.max(z, axis=1).reshape(z.shape[0], 1)
+        return np.exp(z) / np.sum(np.exp(z), axis=1).reshape(z.shape[0], 1)
 
-
-    #Push a value through the NN
+    # Push a value through the NN
     def feedforward(self, value, label):
-
-        self.initialValue1 = value.dot(self.weight1) + self.b1
-        self.answer1 = self.relu(self.initialValue1)
-
-        self.initialValue2 = self.answer1.dot(self.weight2) + self.b2
-        self.answer2 = self.relu(self.initialValue2)
-
-        self.initialValue3 = self.answer2.dot(self.weight3) + self.b3
-        self.answer3 = self.softmax(self.initialValue3)
-
-        self.error = self.answer3 - label
-        return self.answer3
-
+        self.initial_value1 = value.dot(self.weight1) + self.b1
+        self.answer1 = self.relu(self.initial_value1)
+        self.initial_value2 = self.answer1.dot(self.weight2) + self.b2
+        self.answer2 = self.softmax(self.initial_value2)
+        self.error = self.answer2 - label
+        return self.answer2
 
     def backprop(self, input):
-
-        #Cost function
+        # Cost function
         cost = (1 / self.batch) * self.error
 
-        #Finding the weight updates for each layer
-        weight3 = np.dot(cost.T, self.answer2).T
-        weight2 = np.dot(
-            (np.dot(
-                (cost),
-                self.weight3.T
-            ) * self.relu_derivative(self.initialValue2)).T,
-            self.answer1
-        ).T
-        weight1 = np.dot(
-            (np.dot(
-                np.dot(
-                    (cost),
-                    self.weight3.T
-                ) * self.relu_derivative(self.initialValue2),
-                self.weight2.T)*self.relu_derivative(self.answer1)
-            ).T,
-            input
-        ).T
+        # Finding the weight updates for each layer
+        weight2 = np.dot(self.answer1.T, cost)
 
-        #Finding the bias updates for each layer
-        db3 = np.sum(cost,axis = 0)
-        db2 = np.sum(np.dot((cost),self.weight3.T) * self.relu_derivative(self.initialValue2),axis = 0)
-        db1 = np.sum((np.dot(np.dot((cost),self.weight3.T)*self.relu_derivative(self.initialValue2),self.weight2.T)*self.relu_derivative(self.answer1)),axis = 0)
+        # Finding the bias updates for each layer
+        db2 = np.sum(cost, axis=0)
 
-        #Update the perceptron weights
-        self.weight3 = self.weight3 - self.learningRate * weight3
-        self.weight2 = self.weight2 - self.learningRate * weight2
-        self.weight1 = self.weight1 - self.learningRate * weight1
+        # Finding the error and weight updates for the hidden layer
+        hidden_error = np.dot(cost, self.weight2.T) * self.relu_derivative(self.initial_value1)
+        weight1 = np.dot(input.T, hidden_error)
 
-        #Update the layer weights
-        self.b3 = self.b3 - self.learningRate * db3
-        self.b2 = self.b2 - self.learningRate * db2
-        self.b1 = self.b1 - self.learningRate * db1
+        # Finding the bias update for the hidden layer
+        db1 = np.sum(hidden_error, axis=0)
 
+        # Update the perceptron weights
+        self.weight2 = self.weight2 - self.learning_rate * weight2
+        self.weight1 = self.weight1 - self.learning_rate * weight1
+
+        # Update the layer weights
+        self.b2 = self.b2 - self.learning_rate * db2
+        self.b1 = self.b1 - self.learning_rate * db1
 
     #The main algi that performs the train
     def train(self):
@@ -181,44 +152,17 @@ class TwoHiddenLayerNeuralNetwork:
                 start = batch*self.batch
                 end = (batch+1)*self.batch
                 self.feedforward(self.val_input[start:end], self.val_target[start:end])
-                accuracy += np.count_nonzero(np.argmax(self.answer3, axis=1) == np.argmax(self.val_target[start:end],axis=1)) / self.batch
+                accuracy += np.count_nonzero(np.argmax(self.answer2, axis=1) == np.argmax(self.val_target[start:end],axis=1)) / self.batch
 
             #Print the accuracy
             self.accuracy.append( accuracy*100 / (self.val_input.shape[0] // self.batch))
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.accuracy[-1]))
 
-
-    def plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.loss)
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-
-
-    def acc_plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.accuracy)
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
-
-    #Test the final accuracy of the model
-    def test(self, data, labels):
-        accuracy = 0
-        for batch in range(data.shape[0]//self.batch-1):
-            start = batch*self.batch
-            end = (batch+1)*self.batch
-            self.feedforward(data[start:end], labels[start:end])
-            accuracy += np.count_nonzero(np.argmax(self.answer3, axis=1) == np.argmax(labels[start:end],axis=1)) / self.batch
-
-        accuracy = accuracy * 100 / (data.shape[0] // self.batch)
-        print("Final Accuracy = ", accuracy)
-
-
 data = load_data()
 train_data, train_labels, val_data, val_labels, test_data, test_labels = formatData(data)
 
 
-twoLayers = TwoHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
+twoLayers = OneHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
 twoLayers.train()
-twoLayers.test(test_data, test_labels)
+# twoLayers.test(test_data, test_labels)
 
