@@ -1,65 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-train_path = 'mnist_train.csv'
-test_path = 'mnist_test.csv'
-
-
-#Splitting the data into train, validation, and test
-def trainValTestSplit(data):
-    train_data = data[:int(data.shape[0]*0.6)]
-    val_data = data[int(data.shape[0]*0.6):int(data.shape[0]*0.8)]
-    test_data = data[int(data.shape[0]*0.8):]
-
-    return train_data, val_data, test_data
-
-
-#Generating labels for the data so it's in the form [0,0,0,1,0...]
-def createLabels(originalLabels):
-    labels = np.zeros((originalLabels.shape[0], 10))
-
-    for i in range(originalLabels.shape[0]):
-        labels[i][int(originalLabels[i][0])] = 1
-
-    return labels
-
-
-#Helper function to normalize the data so it's all floats between 0 and 1
-def normalize(x):
-    x = x / 255
-    return x
-
-
-#Grabs the data from the files and combines them into one mega data object
-def load_data():
-
-    #Note that the first row from both files has been deleted
-    data_part_one = np.genfromtxt(train_path, delimiter=',')
-    data_part_two = np.genfromtxt(test_path, delimiter=',')
-
-    train_data = np.concatenate((data_part_one, data_part_two))
-    return train_data
-
-
-#Splits the data into train, validation, and test, then normalizes it, and finally creates labels for it, returns 6 numpy arrays
-def formatData(data):
-    #Splitting the data into train, validation and test
-    train_data, val_data, test_data = trainValTestSplit(data)
-
-    #Normalize train data
-    train_normalized = normalize(train_data[:,1:])
-    train_labels = createLabels(train_data[:,:1])
-
-    #Normalize validation data
-    val_normalized = normalize(val_data[:,1:])
-    val_labels = createLabels(val_data[:,:1])
-
-    #Normalize test data
-    test_normalized = normalize(test_data[:,1:])
-    test_labels = createLabels(test_data[:,:1])
-
-    return train_normalized, train_labels, val_normalized, val_labels, test_normalized, test_labels
-
+from helpers import *
 
 
 class OneHiddenLayerNeuralNetwork:
@@ -82,25 +23,13 @@ class OneHiddenLayerNeuralNetwork:
         self.b1 = np.random.randn(256)
         self.b2 = np.random.randn(train_labels.shape[1])
 
-    # Using relu
-    def relu(self, x):
-        return np.maximum(0, x)
-
-    # Derivative of relu, returns a copy of the OG array but with 1 or 0 depending on if the value is > 0
-    def relu_derivative(self, arr):
-        return arr > 0
-
-    # The softmax function for the output layer
-    def softmax(self, z):
-        z = z - np.max(z, axis=1).reshape(z.shape[0], 1)
-        return np.exp(z) / np.sum(np.exp(z), axis=1).reshape(z.shape[0], 1)
 
     # Push a value through the NN
     def feedforward(self, value, label):
         self.initial_value1 = value.dot(self.weight1) + self.b1
-        self.answer1 = self.relu(self.initial_value1)
+        self.answer1 = relu(self.initial_value1)
         self.initial_value2 = self.answer1.dot(self.weight2) + self.b2
-        self.answer2 = self.softmax(self.initial_value2)
+        self.answer2 = softmax(self.initial_value2)
         self.error = self.answer2 - label
         return self.answer2
 
@@ -115,7 +44,7 @@ class OneHiddenLayerNeuralNetwork:
         db2 = np.sum(cost, axis=0)
 
         # Finding the error and weight updates for the hidden layer
-        hidden_error = np.dot(cost, self.weight2.T) * self.relu_derivative(self.initial_value1)
+        hidden_error = np.dot(cost, self.weight2.T) * relu_derivative(self.initial_value1)
         weight1 = np.dot(input.T, hidden_error)
 
         # Finding the bias update for the hidden layer
@@ -158,11 +87,15 @@ class OneHiddenLayerNeuralNetwork:
             self.accuracy.append( accuracy*100 / (self.val_input.shape[0] // self.batch))
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.accuracy[-1]))
 
-data = load_data()
-train_data, train_labels, val_data, val_labels, test_data, test_labels = formatData(data)
 
+    def test(self, data, labels):
+        accuracy = 0
+        for batch in range(data.shape[0]//self.batch-1):
+            start = batch*self.batch
+            end = (batch+1)*self.batch
+            self.feedforward(data[start:end], labels[start:end])
+            accuracy += np.count_nonzero(np.argmax(self.answer2, axis=1) == np.argmax(labels[start:end],axis=1)) / self.batch
 
-twoLayers = OneHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
-twoLayers.train()
-# twoLayers.test(test_data, test_labels)
-
+        accuracy = accuracy * 100 / (data.shape[0] // self.batch)
+        print("Final Accuracy = ", accuracy)
+        return accuracy

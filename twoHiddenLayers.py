@@ -1,64 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-train_path = 'mnist_train.csv'
-test_path = 'mnist_test.csv'
-
-
-#Splitting the data into train, validation, and test
-def trainValTestSplit(data):
-    train_data = data[:int(data.shape[0]*0.6)]
-    val_data = data[int(data.shape[0]*0.6):int(data.shape[0]*0.8)]
-    test_data = data[int(data.shape[0]*0.8):]
-
-    return train_data, val_data, test_data
-
-
-#Generating labels for the data so it's in the form [0,0,0,1,0...]
-def createLabels(originalLabels):
-    labels = np.zeros((originalLabels.shape[0], 10))
-
-    for i in range(originalLabels.shape[0]):
-        labels[i][int(originalLabels[i][0])] = 1
-
-    return labels
-
-
-#Helper function to normalize the data so it's all floats between 0 and 1
-def normalize(x):
-    x = x / 255
-    return x
-
-
-#Grabs the data from the files and combines them into one mega data object
-def load_data():
-
-    #Note that the first row from both files has been deleted
-    data_part_one = np.genfromtxt(train_path, delimiter=',')
-    data_part_two = np.genfromtxt(test_path, delimiter=',')
-
-    train_data = np.concatenate((data_part_one, data_part_two))
-    return train_data
-
-
-#Splits the data into train, validation, and test, then normalizes it, and finally creates labels for it, returns 6 numpy arrays
-def formatData(data):
-    #Splitting the data into train, validation and test
-    train_data, val_data, test_data = trainValTestSplit(data)
-
-    #Normalize train data
-    train_normalized = normalize(train_data[:,1:])
-    train_labels = createLabels(train_data[:,:1])
-
-    #Normalize validation data
-    val_normalized = normalize(val_data[:,1:])
-    val_labels = createLabels(val_data[:,:1])
-
-    #Normalize test data
-    test_normalized = normalize(test_data[:,1:])
-    test_labels = createLabels(test_data[:,:1])
-
-    return train_normalized, train_labels, val_normalized, val_labels, test_normalized, test_labels
+from helpers import *
 
 
 #The main NN class
@@ -75,43 +17,27 @@ class TwoHiddenLayerNeuralNetwork:
         self.accuracy = []  #Accuracy stored in a list so it can be plotted
 
         #The connection weights
-        self.weight1 = np.random.randn(self.input.shape[1],256)
-        self.weight2 = np.random.randn(self.weight1.shape[1],128)
+        self.weight1 = np.random.randn(self.input.shape[1], 256)
+        self.weight2 = np.random.randn(self.weight1.shape[1], 128)
         self.weight3 = np.random.randn(self.weight2.shape[1], train_labels.shape[1])
 
         #The perceptron biases
-        self.b1 = np.random.randn(self.weight1.shape[1])
-        self.b2 = np.random.randn(self.weight2.shape[1])
-        self.b3 = np.random.randn(self.weight3.shape[1])
-
-
-    #Using relu
-    def relu(self, x):
-        return np.maximum(0, x)
-
-
-    #Derivative of relu, returns a copy of the OG array but with 1 or 0 depending on if the value is > 0
-    def relu_derivative(self, arr):
-        return arr > 0
-
-
-    #The softmax function for the output layer
-    def softmax(self, z):
-        z = z - np.max(z, axis = 1).reshape(z.shape[0], 1)
-        return np.exp(z) / np.sum(np.exp(z), axis = 1).reshape(z.shape[0],1)
+        self.biases1 = np.random.randn(self.weight1.shape[1])
+        self.biases2 = np.random.randn(self.weight2.shape[1])
+        self.biases3 = np.random.randn(self.weight3.shape[1])
 
 
     #Push a value through the NN
     def feedforward(self, value, label):
 
-        self.initialValue1 = value.dot(self.weight1) + self.b1
-        self.answer1 = self.relu(self.initialValue1)
+        self.initialValue1 = value.dot(self.weight1) + self.biases1
+        self.answer1 = relu(self.initialValue1)
 
-        self.initialValue2 = self.answer1.dot(self.weight2) + self.b2
-        self.answer2 = self.relu(self.initialValue2)
+        self.initialValue2 = self.answer1.dot(self.weight2) + self.biases2
+        self.answer2 = relu(self.initialValue2)
 
-        self.initialValue3 = self.answer2.dot(self.weight3) + self.b3
-        self.answer3 = self.softmax(self.initialValue3)
+        self.initialValue3 = self.answer2.dot(self.weight3) + self.biases3
+        self.answer3 = softmax(self.initialValue3)
 
         self.error = self.answer3 - label
         return self.answer3
@@ -129,25 +55,25 @@ class TwoHiddenLayerNeuralNetwork:
             (np.dot(
                 (cost),
                 self.weight3.T
-            ) * self.relu_derivative(self.initialValue2)).T,
+            ) * relu_derivative(self.initialValue2)).T,
             self.answer1
         ).T
 
         weight1 = np.dot(
             (np.dot(
-                np.dot(
+                (np.dot(
                     (cost),
                     self.weight3.T
-                ) * self.relu_derivative(self.initialValue2),
-                self.weight2.T) * self.relu_derivative(self.answer1)
-            ).T,
+                ) * relu_derivative(self.initialValue2)),
+                self.weight2.T
+            ) * relu_derivative(self.answer1)).T,
             input
         ).T
 
         #Finding the bias updates for each layer
-        db3 = np.sum(cost,axis = 0)
-        db2 = np.sum(np.dot((cost),self.weight3.T) * self.relu_derivative(self.initialValue2),axis = 0)
-        db1 = np.sum((np.dot(np.dot((cost),self.weight3.T)*self.relu_derivative(self.initialValue2),self.weight2.T)*self.relu_derivative(self.answer1)),axis = 0)
+        updatedBiases3 = np.sum(cost, axis = 0)
+        updatedBiases2 = np.sum(np.dot((cost),self.weight3.T) * relu_derivative(self.initialValue2),axis = 0)
+        updatedBiases1 = np.sum((np.dot(np.dot((cost), self.weight3.T) * relu_derivative(self.initialValue2), self.weight2.T) * relu_derivative(self.answer1)), axis = 0)
 
         #Update the perceptron weights
         self.weight3 = self.weight3 - self.learningRate * weight3
@@ -155,9 +81,9 @@ class TwoHiddenLayerNeuralNetwork:
         self.weight1 = self.weight1 - self.learningRate * weight1
 
         #Update the layer weights
-        self.b3 = self.b3 - self.learningRate * db3
-        self.b2 = self.b2 - self.learningRate * db2
-        self.b1 = self.b1 - self.learningRate * db1
+        self.biases3 = self.biases3 - self.learningRate * updatedBiases3
+        self.biases2 = self.biases2 - self.learningRate * updatedBiases2
+        self.biases1 = self.biases1 - self.learningRate * updatedBiases1
 
 
     #The main algi that performs the train
@@ -170,11 +96,11 @@ class TwoHiddenLayerNeuralNetwork:
 
             #Batch training for speed
             for batch in range(self.input.shape[0]//self.batch-1):
-                start = batch*self.batch
-                end = (batch+1)*self.batch
+                start = batch * self.batch
+                end = (batch + 1) * self.batch
                 self.feedforward(self.input[start:end], self.target[start:end])
                 self.backprop(self.input[start:end])
-                loss += np.mean(self.error**2)
+                loss += np.mean(self.error ** 2)
 
             self.loss.append( loss / (self.input.shape[0] // self.batch))
 
@@ -214,13 +140,4 @@ class TwoHiddenLayerNeuralNetwork:
 
         accuracy = accuracy * 100 / (data.shape[0] // self.batch)
         print("Final Accuracy = ", accuracy)
-
-
-data = load_data()
-train_data, train_labels, val_data, val_labels, test_data, test_labels = formatData(data)
-
-
-twoLayers = TwoHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
-twoLayers.train()
-twoLayers.test(test_data, test_labels)
-
+        return accuracy

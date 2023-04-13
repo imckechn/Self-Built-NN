@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import helpers
 
 train_path = 'mnist_train.csv'
 test_path = 'mnist_test.csv'
@@ -78,22 +79,6 @@ class noHiddenLayerNeuralNetwork:
 
         #The perceptron biases
         self.b1 = np.random.randn(self.weight1.shape[1])
-
-
-    #Using relu
-    def relu(self, x):
-        return np.maximum(0, x)
-
-
-    #Derivative of relu, returns a copy of the OG array but with 1 or 0 depending on if the value is > 0
-    def relu_derivative(self, arr):
-        return arr > 0
-
-
-    #The softmax function for the output layer
-    def softmax(self, z):
-        z = z - np.max(z, axis = 1).reshape(z.shape[0], 1)
-        return np.exp(z) / np.sum(np.exp(z), axis = 1).reshape(z.shape[0],1)
 
 
     #Push a value through the NN
@@ -205,6 +190,7 @@ class noHiddenLayerNeuralNetwork:
 
         accuracy = accuracy * 100 / (data.shape[0] // self.batch)
         print("Final Accuracy = ", accuracy)
+         return accuracy
 
 
 data = load_data()
