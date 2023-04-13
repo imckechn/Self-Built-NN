@@ -34,7 +34,6 @@ def load_data():
     data_part_two = np.genfromtxt(test_path, delimiter=',')
 
     train_data = np.concatenate((data_part_one, data_part_two))
-
     return train_data
 
 
@@ -58,25 +57,24 @@ def formatData(data):
 
 
 class NeuralNetwork:
-    def __init__(self, x, y, batch = 64, lr = 1e-3,  epochs = 50):
-        self.input = x
-        self.target = y
+    def __init__(self, train_data, train_labels, val_data, val_labels, batch = 64, lr = 0.01,  epochs = 50):
+        self.input = train_data
+        self.target = train_labels
+        self.val_input = val_data
+        self.val_target = val_labels
         self.batch = batch
         self.epochs = epochs
         self.lr = lr
-
-        self.x = self.input[:self.batch] # batch input
-        self.y = self.target[:self.batch] # batch target value
         self.loss = []
         self.acc = []
 
-        self.init_weights()
+        self.init_weights(train_labels.shape[1])
 
 
-    def init_weights(self):
+    def init_weights(self, shape):
         self.W1 = np.random.randn(self.input.shape[1],256)
         self.W2 = np.random.randn(self.W1.shape[1],128)
-        self.W3 = np.random.randn(self.W2.shape[1],self.y.shape[1])
+        self.W3 = np.random.randn(self.W2.shape[1], shape)
 
         self.b1 = np.random.randn(self.W1.shape[1],)
         self.b2 = np.random.randn(self.W2.shape[1],)
@@ -103,9 +101,9 @@ class NeuralNetwork:
         self.target = self.target[idx]
 
 
-    def feedforward(self):
-        assert self.x.shape[1] == self.W1.shape[0]
-        self.z1 = self.x.dot(self.W1) + self.b1
+    def feedforward(self, value, label):
+        assert value.shape[1] == self.W1.shape[0]
+        self.z1 = value.dot(self.W1) + self.b1
         self.a1 = self.ReLU(self.z1)
 
         assert self.a1.shape[1] == self.W2.shape[0]
@@ -115,15 +113,18 @@ class NeuralNetwork:
         assert self.a2.shape[1] == self.W3.shape[0]
         self.z3 = self.a2.dot(self.W3) + self.b3
         self.a3 = self.softmax(self.z3)
-        self.error = self.a3 - self.y
+
+        self.error = self.a3 - label
+
+        return self.a3
 
 
-    def backprop(self):
+    def backprop(self, input):
         dcost = (1/self.batch)*self.error
 
         DW3 = np.dot(dcost.T,self.a2).T
         DW2 = np.dot((np.dot((dcost),self.W3.T) * self.dReLU(self.z2)).T,self.a1).T
-        DW1 = np.dot((np.dot(np.dot((dcost),self.W3.T)*self.dReLU(self.z2),self.W2.T)*self.dReLU(self.z1)).T,self.x).T
+        DW1 = np.dot((np.dot(np.dot((dcost),self.W3.T)*self.dReLU(self.z2),self.W2.T)*self.dReLU(self.z1)).T,input).T
 
         db3 = np.sum(dcost,axis = 0)
         db2 = np.sum(np.dot((dcost),self.W3.T) * self.dReLU(self.z2),axis = 0)
@@ -135,7 +136,7 @@ class NeuralNetwork:
 
         assert db3.shape == self.b3.shape
         assert db2.shape == self.b2.shape
-        assert db1.shape == self.b1.shape 
+        assert db1.shape == self.b1.shape
 
         self.W3 = self.W3 - self.lr * DW3
         self.W2 = self.W2 - self.lr * DW2
@@ -147,22 +148,26 @@ class NeuralNetwork:
 
     def train(self):
         for epoch in range(self.epochs):
-            l = 0
-            acc = 0
+            loss = 0
+            accuracy = 0
             self.shuffle()
 
             for batch in range(self.input.shape[0]//self.batch-1):
                 start = batch*self.batch
                 end = (batch+1)*self.batch
-                self.x = self.input[start:end]
-                self.y = self.target[start:end]
-                self.feedforward()
-                self.backprop()
-                l+=np.mean(self.error**2)
-                acc+= np.count_nonzero(np.argmax(self.a3,axis=1) == np.argmax(self.y,axis=1)) / self.batch
+                self.feedforward(self.input[start:end], self.target[start:end])
+                self.backprop(self.input[start:end])
+                loss += np.mean(self.error**2)
 
-            self.loss.append(l/(self.input.shape[0]//self.batch))
-            self.acc.append(acc*100/(self.input.shape[0]//self.batch))
+            self.loss.append( loss / (self.input.shape[0] // self.batch))
+
+            for batch in range(self.val_input.shape[0]//self.batch-1):
+                start = batch*self.batch
+                end = (batch+1)*self.batch
+                self.feedforward(self.val_input[start:end], self.val_target[start:end])
+                accuracy += np.count_nonzero(np.argmax(self.a3,axis=1) == np.argmax(self.val_target[start:end],axis=1)) / self.batch
+
+            self.acc.append( accuracy*100 / (self.val_input.shape[0] // self.batch))
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.acc[-1]))
 
 
@@ -178,19 +183,23 @@ class NeuralNetwork:
         plt.xlabel("Epochs")
         plt.ylabel("Accuracy")
 
-    def test(self,xtest,ytest):
-        self.x = xtest
-        self.y = ytest
-        self.feedforward()
-        acc = np.count_nonzero(np.argmax(self.a3,axis=1) == np.argmax(self.y,axis=1)) / self.x.shape[0]
-        print("Accuracy:", 100 * acc, "%")
+    def test(self, data, labels):
+        accuracy = 0
+        for batch in range(data.shape[0]//self.batch-1):
+            start = batch*self.batch
+            end = (batch+1)*self.batch
+            self.feedforward(data[start:end], labels[start:end])
+            accuracy += np.count_nonzero(np.argmax(self.a3,axis=1) == np.argmax(labels[start:end],axis=1)) / self.batch
+
+        accuracy = accuracy * 100 / (data.shape[0] // self.batch)
+        print("Final Accuracy = ", accuracy)
 
 
 data = load_data()
-train_data, train_labels, val_normalized, val_labels, test_normalized, test_labels = formatData(data)
+train_data, train_labels, val_data, val_labels, test_data, test_labels = formatData(data)
 
 
-NN = NeuralNetwork(train_data, train_labels)
+NN = NeuralNetwork(train_data, train_labels, val_data, val_labels)
 NN.train()
 # NN.plot()
-# NN.test(x_test,y_test)
+NN.test(test_data, test_labels)
