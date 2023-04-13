@@ -61,8 +61,8 @@ def formatData(data):
     return train_normalized, train_labels, val_normalized, val_labels, test_normalized, test_labels
 
 
-#The main NN class
-class TwoHiddenLayerNeuralNetwork:
+
+class noHiddenLayerNeuralNetwork:
     def __init__(self, train_data, train_labels, val_data, val_labels, batch = 64, learningRate = 0.01,  epochs = 50):
         self.input = train_data
         self.target = train_labels
@@ -75,14 +75,10 @@ class TwoHiddenLayerNeuralNetwork:
         self.accuracy = []  #Accuracy stored in a list so it can be plotted
 
         #The connection weights
-        self.weight1 = np.random.randn(self.input.shape[1],256)
-        self.weight2 = np.random.randn(self.weight1.shape[1],128)
-        self.weight3 = np.random.randn(self.weight2.shape[1], train_labels.shape[1])
+        self.weight1 = np.random.randn(self.input.shape[1],train_labels.shape[1])
 
         #The perceptron biases
         self.b1 = np.random.randn(self.weight1.shape[1])
-        self.b2 = np.random.randn(self.weight2.shape[1])
-        self.b3 = np.random.randn(self.weight3.shape[1])
 
 
     #Using relu
@@ -105,16 +101,12 @@ class TwoHiddenLayerNeuralNetwork:
     def feedforward(self, value, label):
 
         self.initialValue1 = value.dot(self.weight1) + self.b1
-        self.answer1 = self.relu(self.initialValue1)
+        # self.answer1 = self.relu(self.initialValue1)
 
-        self.initialValue2 = self.answer1.dot(self.weight2) + self.b2
-        self.answer2 = self.relu(self.initialValue2)
+        self.answer1 = self.softmax(self.initialValue1)
 
-        self.initialValue3 = self.answer2.dot(self.weight3) + self.b3
-        self.answer3 = self.softmax(self.initialValue3)
-
-        self.error = self.answer3 - label
-        return self.answer3
+        self.error = self.answer1 - label
+        return self.answer1
 
 
     def backprop(self, input):
@@ -123,38 +115,40 @@ class TwoHiddenLayerNeuralNetwork:
         cost = (1 / self.batch) * self.error
 
         #Finding the weight updates for each layer
-        weight3 = np.dot(cost.T, self.answer2).T
-        weight2 = np.dot(
-            (np.dot(
-                (cost),
-                self.weight3.T
-            ) * self.relu_derivative(self.initialValue2)).T,
-            self.answer1
-        ).T
-        weight1 = np.dot(
-            (np.dot(
-                np.dot(
-                    (cost),
-                    self.weight3.T
-                ) * self.relu_derivative(self.initialValue2),
-                self.weight2.T)*self.relu_derivative(self.answer1)
-            ).T,
-            input
-        ).T
+        # weight3 = np.dot(cost.T, self.answer2).T
+        # weight2 = np.dot(
+        #     (np.dot(
+        #         (cost),
+        #         self.weight3.T
+        #     ) * self.relu_derivative(self.initialValue2)).T,
+        #     self.answer1
+        # ).T
+        # weight1 = np.dot(
+        #     (np.dot(
+        #         np.dot(
+        #             (cost),
+        #             self.weight3.T
+        #         ) * self.relu_derivative(self.initialValue2),
+        #         self.weight2.T)*self.relu_derivative(self.answer1)
+        #     ).T,
+        #     input
+        # ).T
+
+        weight1 = np.dot(cost.T, self.answer1).T
 
         #Finding the bias updates for each layer
-        db3 = np.sum(cost,axis = 0)
-        db2 = np.sum(np.dot((cost),self.weight3.T) * self.relu_derivative(self.initialValue2),axis = 0)
-        db1 = np.sum((np.dot(np.dot((cost),self.weight3.T)*self.relu_derivative(self.initialValue2),self.weight2.T)*self.relu_derivative(self.answer1)),axis = 0)
+        db1 = np.sum(cost,axis = 0)
+        # db2 = np.sum(np.dot((cost),self.weight3.T) * self.relu_derivative(self.initialValue2),axis = 0)
+        # db1 = np.sum((np.dot(np.dot((cost),self.weight3.T)*self.relu_derivative(self.initialValue2),self.weight2.T)*self.relu_derivative(self.answer1)),axis = 0)
 
         #Update the perceptron weights
-        self.weight3 = self.weight3 - self.learningRate * weight3
-        self.weight2 = self.weight2 - self.learningRate * weight2
+        # self.weight3 = self.weight3 - self.learningRate * weight3
+        # self.weight2 = self.weight2 - self.learningRate * weight2
         self.weight1 = self.weight1 - self.learningRate * weight1
 
         #Update the layer weights
-        self.b3 = self.b3 - self.learningRate * db3
-        self.b2 = self.b2 - self.learningRate * db2
+        # self.b3 = self.b3 - self.learningRate * db3
+        # self.b2 = self.b2 - self.learningRate * db2
         self.b1 = self.b1 - self.learningRate * db1
 
 
@@ -218,7 +212,7 @@ data = load_data()
 train_data, train_labels, val_data, val_labels, test_data, test_labels = formatData(data)
 
 
-twoLayers = TwoHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
+twoLayers = (train_data, train_labels, val_data, val_labels)
 twoLayers.train()
 twoLayers.test(test_data, test_labels)
 
