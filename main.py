@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import zeroHiddenLayers
 import oneHiddenLayer
 import twoHiddenLayers
 import threeHiddenLayers
@@ -74,10 +75,9 @@ print("Data collected")
 accuracies = []
 
 #No hidden layers
-print("Training Model with no hidden layers")
-accuracies.append([0, 0])
-
-
+zeroLayers = zeroHiddenLayers.ZeroHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
+zeroLayers.train()
+accuracies.append( [0, zeroLayers.test(test_data, test_labels)])
 
 #One hidden layer
 # print("Training Model with one hidden layer")
@@ -85,12 +85,11 @@ accuracies.append([0, 0])
 # oneLayer.train()
 # accuracies.append( [1, oneLayer.test(test_data, test_labels)])
 
-
 # #Two hidden layers
-# print("Training Model with two hidden layers")
-# twoLayers = twoHiddenLayers.TwoHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
-# twoLayers.train()
-# accuracies.append( [2, twoLayers.test(test_data, test_labels)] )
+print("Training Model with two hidden layers")
+twoLayers = twoHiddenLayers.TwoHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
+twoLayers.train()
+accuracies.append( [2, twoLayers.test(test_data, test_labels)] )
 
 #Three hidden layers
 print("Training Model with three hidden layers")
