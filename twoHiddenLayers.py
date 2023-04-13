@@ -124,6 +124,7 @@ class TwoHiddenLayerNeuralNetwork:
 
         #Finding the weight updates for each layer
         weight3 = np.dot(cost.T, self.answer2).T
+
         weight2 = np.dot(
             (np.dot(
                 (cost),
@@ -131,13 +132,14 @@ class TwoHiddenLayerNeuralNetwork:
             ) * self.relu_derivative(self.initialValue2)).T,
             self.answer1
         ).T
+
         weight1 = np.dot(
             (np.dot(
                 np.dot(
                     (cost),
                     self.weight3.T
                 ) * self.relu_derivative(self.initialValue2),
-                self.weight2.T)*self.relu_derivative(self.answer1)
+                self.weight2.T) * self.relu_derivative(self.answer1)
             ).T,
             input
         ).T
