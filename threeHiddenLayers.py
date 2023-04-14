@@ -48,7 +48,8 @@ class ThreeHiddenLayerNeuralNetwork:
         return self.answer4
 
 
-    def backprop(self, input):
+    #Back propagation algo
+    def backPropagation(self, input):
 
         #Cost function
         cost = (1 / self.batch) * self.error
@@ -121,7 +122,7 @@ class ThreeHiddenLayerNeuralNetwork:
                 start = batch * self.batch
                 end = (batch + 1) * self.batch
                 self.feedforward(self.input[start:end], self.target[start:end])
-                self.backprop(self.input[start:end])
+                self.backPropagation(self.input[start:end])
                 loss += np.mean(self.error ** 2)
 
             self.loss.append( loss / (self.input.shape[0] // self.batch))
@@ -138,18 +139,9 @@ class ThreeHiddenLayerNeuralNetwork:
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.accuracy[-1]))
 
 
-    def plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.loss)
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-
-
-    def acc_plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.accuracy)
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
+    #Gets the accuracy of the model after training for each epoch
+    def getAccuracy(self):
+        return self.accuracy
 
     #Test the final accuracy of the model
     def test(self, data, labels):

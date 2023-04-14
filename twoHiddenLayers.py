@@ -42,8 +42,8 @@ class TwoHiddenLayerNeuralNetwork:
         self.error = self.answer3 - label
         return self.answer3
 
-
-    def backprop(self, input):
+    #Back propagation algo
+    def backPropagation(self, input):
 
         #Cost function
         cost = (1 / self.batch) * self.error
@@ -76,12 +76,6 @@ class TwoHiddenLayerNeuralNetwork:
         updatedBiases1 = np.sum((np.dot(np.dot((cost), self.weight3.T) * relu_derivative(self.initialValue2), self.weight2.T) * relu_derivative(self.answer1)), axis = 0)
 
         #Update the perceptron weights
-        print("weight3")
-        print(weight3.shape)
-
-        print("self.weight3")
-        print(self.weight3.shape)
-
         self.weight3 = self.weight3 - self.learningRate * weight3
         self.weight2 = self.weight2 - self.learningRate * weight2
         self.weight1 = self.weight1 - self.learningRate * weight1
@@ -105,7 +99,7 @@ class TwoHiddenLayerNeuralNetwork:
                 start = batch * self.batch
                 end = (batch + 1) * self.batch
                 self.feedforward(self.input[start:end], self.target[start:end])
-                self.backprop(self.input[start:end])
+                self.backPropagation(self.input[start:end])
                 loss += np.mean(self.error ** 2)
 
             self.loss.append( loss / (self.input.shape[0] // self.batch))
@@ -121,19 +115,9 @@ class TwoHiddenLayerNeuralNetwork:
             self.accuracy.append( accuracy*100 / (self.val_input.shape[0] // self.batch))
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.accuracy[-1]))
 
-
-    def plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.loss)
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-
-
-    def acc_plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.accuracy)
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
+    #Gets the accuracy of the model after training for each epoch
+    def getAccuracy(self):
+        return self.accuracy
 
     #Test the final accuracy of the model
     def test(self, data, labels):

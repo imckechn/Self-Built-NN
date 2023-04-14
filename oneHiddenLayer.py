@@ -33,7 +33,7 @@ class OneHiddenLayerNeuralNetwork:
         self.error = self.answer2 - label
         return self.answer2
 
-    def backprop(self, input):
+    def backPropagation(self, input):
         # Cost function
         cost = (1 / self.batch) * self.error
 
@@ -71,7 +71,7 @@ class OneHiddenLayerNeuralNetwork:
                 start = batch*self.batch
                 end = (batch+1)*self.batch
                 self.feedforward(self.input[start:end], self.target[start:end])
-                self.backprop(self.input[start:end])
+                self.backPropagation(self.input[start:end])
                 loss += np.mean(self.error**2)
 
             self.loss.append( loss / (self.input.shape[0] // self.batch))
@@ -88,6 +88,7 @@ class OneHiddenLayerNeuralNetwork:
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.accuracy[-1]))
 
 
+    #Test the model on the test data
     def test(self, data, labels):
         accuracy = 0
         for batch in range(data.shape[0]//self.batch-1):
@@ -99,3 +100,8 @@ class OneHiddenLayerNeuralNetwork:
         accuracy = accuracy * 100 / (data.shape[0] // self.batch)
         print("Final Accuracy = ", accuracy)
         return accuracy
+
+
+    #Gets the accuracy of the model after training for each epoch
+    def getAccuracy(self):
+        return self.accuracy

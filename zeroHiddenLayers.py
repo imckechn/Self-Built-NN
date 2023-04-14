@@ -44,10 +44,16 @@ class ZeroHiddenLayerNeuralNetwork:
         return self.answer1
 
 
-    def backprop(self, input):
+    def backPropagation(self, input):
 
         #Cost function
         cost = (1 / self.batch) * self.error
+
+        print("Cost shape ")
+        print(cost.shape)
+
+        print("answers shape")
+        print(self.answer1.shape)
 
         weight1 = np.dot(cost.T, self.answer1).T
         updatedBiases1 = np.sum(cost, axis = 0)
@@ -75,7 +81,7 @@ class ZeroHiddenLayerNeuralNetwork:
                 start = batch*self.batch
                 end = (batch+1)*self.batch
                 self.feedforward(self.input[start:end], self.target[start:end])
-                self.backprop(self.input[start:end])
+                # self.backPropagation(self.input[start:end])
                 loss += np.mean(self.error**2)
 
             self.loss.append( loss / (self.input.shape[0] // self.batch))
@@ -92,18 +98,10 @@ class ZeroHiddenLayerNeuralNetwork:
             print("Epoch {} Loss: {} Accuracy: {}%".format(epoch+1,self.loss[-1],self.accuracy[-1]))
 
 
-    def plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.loss)
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
+    #Gets the accuracy of the model after training for each epoch
+    def getAccuracy(self):
+        return self.accuracy
 
-
-    def acc_plot(self):
-        plt.figure(dpi = 125)
-        plt.plot(self.accuracy)
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
 
     #Test the final accuracy of the model
     def test(self, data, labels):

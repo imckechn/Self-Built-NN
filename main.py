@@ -77,29 +77,32 @@ accuracies = []
 #No hidden layers
 zeroLayers = zeroHiddenLayers.ZeroHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
 zeroLayers.train()
-accuracies.append( [0, zeroLayers.test(test_data, test_labels)])
+zeroLayers.test(test_data, test_labels)
+acc0 = zeroLayers.getAccuracy()
 
 #One hidden layer
-# print("Training Model with one hidden layer")
-# oneLayer = oneHiddenLayer.OneHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
-# oneLayer.train()
-# accuracies.append( [1, oneLayer.test(test_data, test_labels)])
+print("Training Model with one hidden layer")
+oneLayer = oneHiddenLayer.OneHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
+oneLayer.train()
+acc1 = oneLayer.getAccuracy()
 
 # #Two hidden layers
 print("Training Model with two hidden layers")
 twoLayers = twoHiddenLayers.TwoHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
 twoLayers.train()
-accuracies.append( [2, twoLayers.test(test_data, test_labels)] )
+acc2 = twoLayers.getAccuracy()
 
 #Three hidden layers
 print("Training Model with three hidden layers")
 threeLayers = threeHiddenLayers.ThreeHiddenLayerNeuralNetwork(train_data, train_labels, val_data, val_labels)
 threeLayers.train()
-accuracies.append( [3, threeLayers.test(test_data, test_labels)])
+acc3 = threeLayers.getAccuracy()
 
 
-# Final print out
-print("Most Accurate Model")
-accuracies.sort(key=lambda x: x[1], reverse=True)
-for row in accuracies:
-    print("Number of Hidden Layers: " + str(row[0]) + " Accuracy: " + str(row[1]))
+y = [i for i in range(50)]
+plt.plot(y, acc0, label = "0 Hidden Layers")
+plt.plot(y, acc1, label = "1 Hidden Layer")
+plt.plot(y, acc2, label = "2 Hidden Layers")
+plt.plot(y, acc3, label = "3 Hidden Layers")
+plt.legend()
+plt.show()
